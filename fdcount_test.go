@@ -3,10 +3,11 @@ package fdcount
 import (
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/getlantern/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTCP(t *testing.T) {
@@ -85,7 +86,7 @@ func TestWaitUntilNoneMatchOK(t *testing.T) {
 		}
 	}()
 
-	err = WaitUntilNoneMatch("TCP", wait*5)
+	err = WaitUntilNoneMatch("TCP", wait*50)
 	elapsed := time.Now().Sub(start)
 	assert.NoError(t, err, "Waiting should have succeeded")
 	assert.True(t, elapsed >= wait, "Should have waited a while")
@@ -102,17 +103,22 @@ func TestWaitUntilNoneMatchTimeout(t *testing.T) {
 		}
 	}()
 
-	wait := 200 * time.Millisecond
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	wait := 1000 * time.Millisecond
 	start := time.Now()
 	go func() {
 		time.Sleep(wait)
 		if err := conn.Close(); err != nil {
 			t.Fatalf("Unable to close connection: %v", err)
 		}
+		wg.Done()
 	}()
 
-	err = WaitUntilNoneMatch("TCP", wait/4)
+	err = WaitUntilNoneMatch("TCP", wait/50)
 	elapsed := time.Now().Sub(start)
 	assert.Error(t, err, "Waiting should have failed")
 	assert.True(t, elapsed < wait, "Should have waited less than time to close conn")
+	wg.Wait()
 }
