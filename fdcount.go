@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/getlantern/mtime"
 )
 
 var (
@@ -35,12 +37,12 @@ func Matching(match string) (int, *Counter, error) {
 // WaitUntilNoneMatch waits until no file descriptors match the given string, or
 // the timeout is hit.
 func WaitUntilNoneMatch(match string, timeout time.Duration) error {
-	start := time.Now()
+	elapsed := mtime.Stopwatch()
 	var out []byte
 	var err error
 	var count int
 
-	for time.Now().Sub(start) < timeout {
+	for elapsed() < timeout {
 		out, err = runLsof()
 		if err != nil {
 			return err
