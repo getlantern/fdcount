@@ -68,19 +68,22 @@ type Counter struct {
 // AssertDelta asserts that the number of file descriptors added/removed since Counter was
 // created equals the given number.
 func (c *Counter) AssertDelta(expected int) error {
-	var err error
+	var firstErr error
 
 	for try := uint(0); try < maxAssertAttempts; try++ {
-		err = c.doAssertDelta(expected)
+		err := c.doAssertDelta(expected)
 		if err == nil {
 			return nil
+		}
+		if firstErr == nil {
+			firstErr = err
 		}
 		// Count didn't match, could be we have some lingering descriptors, wait
 		// and then try again.
 		time.Sleep((50 << try) * time.Millisecond)
 	}
 
-	return err
+	return firstErr
 }
 
 func (c *Counter) doAssertDelta(expected int) error {
