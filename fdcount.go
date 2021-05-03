@@ -86,6 +86,20 @@ func (c *Counter) AssertDelta(expected int) error {
 	return firstErr
 }
 
+// AssertDeltaWait is like AssertDelta but waits up to the given timeout to find a match.
+func (c *Counter) AssertDeltaWait(expected int, timeout time.Duration) error {
+	elapsed := mtime.Stopwatch()
+	var err error
+	for elapsed() < timeout {
+		err = c.AssertDelta(expected)
+		if err == nil {
+			return err
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return err
+}
+
 func (c *Counter) doAssertDelta(expected int) error {
 	out, err := runLsof()
 	if err != nil {
